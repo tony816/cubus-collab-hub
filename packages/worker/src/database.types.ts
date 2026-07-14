@@ -58,6 +58,17 @@ type ConflictRow = {
   resolved_at: string | null;
 };
 
+type TurnSummaryRow = {
+  id: string;
+  agent: "chatgpt" | "claude";
+  seen_sequence: number;
+  user_prompt: string | null;
+  response_text: string | null;
+  summary: string | null;
+  affected_paths: string[];
+  created_at: string;
+};
+
 type Table<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -73,7 +84,7 @@ export type Database = {
       proposals: Table<ProposalRow>;
       events: Table<EventRow>;
       agent_cursors: Table<{ agent: "chatgpt" | "claude" | "bridge"; last_sequence: number; updated_at: string }>;
-      turn_summaries: Table<Record<string, never>>;
+      turn_summaries: Table<TurnSummaryRow>;
       conflicts: Table<ConflictRow>;
     };
     Views: Record<string, never>;
@@ -98,7 +109,14 @@ export type Database = {
       approve_document_proposal: { Args: { p_proposal_id: string; p_instruction: string }; Returns: Json };
       reject_document_proposal: { Args: { p_proposal_id: string; p_instruction: string; p_reason: string }; Returns: Json };
       record_agent_turn: {
-        Args: { p_agent: string; p_seen_sequence: number; p_summary: string; p_affected_paths: string[] };
+        Args: {
+          p_agent: string;
+          p_seen_sequence: number;
+          p_user_prompt: string;
+          p_response_text: string;
+          p_summary: string | null;
+          p_affected_paths: string[];
+        };
         Returns: Json;
       };
       upsert_canonical_document: {

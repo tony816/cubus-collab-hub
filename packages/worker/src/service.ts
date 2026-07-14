@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  MAX_TURN_PROMPT_CHARS,
+  MAX_TURN_RESPONSE_CHARS,
   type ProposePatchInput,
   type ProposalStatus,
   type UpsertDocumentInput,
@@ -15,6 +17,12 @@ function requireData<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
   if (data === null) throw new Error("Supabase returned no data");
   return data;
+}
+
+// Keep an oversized turn recordable instead of failing the whole tool call.
+export function truncateTurnText(value: string, limit: number): string {
+  if (value.length <= limit) return value;
+  return `${value.slice(0, limit)}\n\n…[${value.length - limit}자 잘림]`;
 }
 
 export class CollabService {
@@ -83,22 +91,30 @@ export class CollabService {
     if (cursorResult.error) throw new Error(cursorResult.error.message);
     const cursor = cursorResult.data?.last_sequence ?? 0;
 
-    const [eventsResult, proposalsResult, conflictsResult, focused, searched] = await Promise.all([
+    const otherAgent = input.agent === "claude" ? "chatgpt" : "claude";
+    const [eventsResult, latestResult, proposalsResult, conflictsResult, turnsResult, focused, searched] = await Promise.all([
       this.db.from("events").select("sequence,kind,entity_type,entity_id,actor,origin,metadata,created_at")
         .gt("sequence", cursor).order("sequence", { ascending: true }).limit(200),
+      this.db.from("events").select("sequence").order("sequence", { ascending: false }).limit(1).maybeSingle(),
       this.db.from("proposals").select("id,target_path,base_version,rationale,agent,status,created_at")
         .eq("status", "pending").order("created_at", { ascending: true }).limit(50),
       this.db.from("conflicts").select("id,path,expected_version,actual_version,origin,status,created_at")
         .eq("status", "open").order("created_at", { ascending: true }).limit(50),
+      this.db.from("turn_summaries").select("agent,user_prompt,response_text,summary,affected_paths,created_at")
+        .eq("agent", otherAgent).order("created_at", { ascending: false }).limit(10),
       Promise.all(input.focusPaths.map(async (path) => this.getDocument(path).catch(() => null))),
       input.query.length > 0 ? this.search(input.query, 10) : Promise.resolve([]),
     ]);
 
     if (eventsResult.error) throw new Error(eventsResult.error.message);
+    if (latestResult.error) throw new Error(latestResult.error.message);
     if (proposalsResult.error) throw new Error(proposalsResult.error.message);
     if (conflictsResult.error) throw new Error(conflictsResult.error.message);
+    if (turnsResult.error) throw new Error(turnsResult.error.message);
 
-    const latestSequence = eventsResult.data.reduce((max, event) => Math.max(max, event.sequence), cursor);
+    // Global latest, so an agent knows how far behind it is even when a page of
+    // 200 changes does not reach the newest event.
+    const latestSequence = Math.max(latestResult.data?.sequence ?? 0, cursor);
     const candidates = [...focused.filter((doc) => doc !== null), ...searched];
     const unique = new Map(candidates.map((doc) => [doc.path, doc]));
     let remaining = input.maxChars;
@@ -110,6 +126,15 @@ export class CollabService {
       remaining -= content.length;
     }
 
+    const recentTurns = turnsResult.data.map((turn) => ({
+      agent: turn.agent,
+      createdAt: turn.created_at,
+      userPrompt: turn.user_prompt,
+      responseText: turn.response_text,
+      summary: turn.summary,
+      affectedPaths: turn.affected_paths,
+    }));
+
     return {
       cursor,
       latestSequence,
@@ -117,6 +142,7 @@ export class CollabService {
       documents,
       pendingProposals: proposalsResult.data,
       openConflicts: conflictsResult.data,
+      recentTurns,
     };
   }
 
@@ -164,13 +190,17 @@ export class CollabService {
   async recordTurn(input: {
     agent: "chatgpt" | "claude";
     seenSequence: number;
-    summary: string;
+    userPrompt: string;
+    responseText: string;
+    summary?: string | undefined;
     affectedPaths: string[];
   }): Promise<JsonObject> {
     const { data, error } = await this.db.rpc("record_agent_turn", {
       p_agent: input.agent,
       p_seen_sequence: input.seenSequence,
-      p_summary: input.summary,
+      p_user_prompt: truncateTurnText(input.userPrompt, MAX_TURN_PROMPT_CHARS),
+      p_response_text: truncateTurnText(input.responseText, MAX_TURN_RESPONSE_CHARS),
+      p_summary: input.summary ?? null,
       p_affected_paths: input.affectedPaths,
     });
     return requireData(data as JsonObject | null, error);
