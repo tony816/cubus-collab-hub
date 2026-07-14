@@ -5,6 +5,9 @@
   "compatibility_date": "2026-07-14",
   "compatibility_flags": ["nodejs_compat"],
   "dev": { "port": 8788 },
+  "vars": {
+    "SUPABASE_URL": "https://bzyzfypywcxgbqqjvkpo.supabase.co"
+  },
   "durable_objects": {
     "bindings": [
       { "name": "MCP_OBJECT", "class_name": "CubusMCP" }
