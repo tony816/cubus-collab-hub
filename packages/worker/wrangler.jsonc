@@ -6,7 +6,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "dev": { "port": 8788 },
   "vars": {
-    "SUPABASE_URL": "https://bzyzfypywcxgbqqjvkpo.supabase.co"
+    "SUPABASE_URL": "https://bzyzfypywcxgbqqjvkpo.supabase.co",
+    "SUPABASE_PROXY_URL": "https://bzyzfypywcxgbqqjvkpo.supabase.co/functions/v1/cubus-service-proxy"
   },
   "durable_objects": {
     "bindings": [

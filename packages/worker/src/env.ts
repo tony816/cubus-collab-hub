@@ -1,6 +1,7 @@
 export type WorkerSecrets = {
   SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
+  SUPABASE_PROXY_URL: string;
+  SUPABASE_PROXY_SECRET: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   COOKIE_ENCRYPTION_KEY: string;
@@ -18,4 +19,3 @@ export type OAuthProps = {
   name: string;
   email: string | null;
 };
-

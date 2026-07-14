@@ -1,5 +1,5 @@
 SUPABASE_URL=https://PROJECT_REF.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=replace-with-secret
+SUPABASE_PROXY_SECRET=replace-with-a-random-32-byte-secret
 GITHUB_CLIENT_ID=replace-with-oauth-app-client-id
 GITHUB_CLIENT_SECRET=replace-with-oauth-app-secret
 COOKIE_ENCRYPTION_KEY=replace-with-64-random-hex-characters
@@ -8,4 +8,3 @@ BRIDGE_API_TOKEN=replace-with-different-random-token
 WEBHOOK_SHARED_SECRET=replace-with-different-random-token
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/replace-me
 ALLOWED_GITHUB_LOGIN=tony816
-
