@@ -274,6 +274,7 @@ app.post("/webhooks/supabase", async (c) => {
   const event = payload.record;
   const alertKinds = new Set(["proposal.created", "proposal.approved", "proposal.rejected", "conflict.created"]);
   if (!event.kind || !alertKinds.has(event.kind)) return c.json({ accepted: false, reason: "ignored event" }, 202);
+  if (!c.env.DISCORD_WEBHOOK_URL) return c.json({ accepted: false, reason: "discord not configured" }, 202);
 
   const path = typeof event.metadata?.path === "string" ? event.metadata.path : "(unknown path)";
   const proposalId = typeof event.metadata?.proposalId === "string" ? event.metadata.proposalId : undefined;

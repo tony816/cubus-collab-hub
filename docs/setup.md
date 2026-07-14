@@ -50,11 +50,11 @@ npx wrangler deploy
 
 ## 3. Supabase 웹훅과 Discord
 
-Supabase Dashboard → Database Webhooks에서 `public.events`의 `INSERT`를 다음 주소로 연결합니다.
+배포 마이그레이션은 `public.events`의 알림 대상 이벤트만 다음 주소로 보내는 비동기 `pg_net` 트리거를 구성합니다.
 
 `https://cubus-collab-hub.zpfhfh816.workers.dev/webhooks/supabase`
 
-헤더 `X-CUBUS-Webhook-Secret`에 Worker의 `WEBHOOK_SHARED_SECRET`과 같은 값을 설정합니다. Worker는 제안·승인·거절·충돌 이벤트만 Discord로 보내며 본문은 폐기합니다.
+공유 비밀값은 Supabase Vault의 `cubus_webhook_shared_secret`에 저장하며 헤더 `X-CUBUS-Webhook-Secret`으로만 전송합니다. Worker는 제안·승인·거절·충돌 이벤트만 Discord로 보내며 본문은 폐기합니다. `DISCORD_WEBHOOK_URL`이 아직 없으면 이벤트를 안전하게 수락하되 외부 전송은 생략합니다.
 
 ## 4. Obsidian 초기 이전
 
