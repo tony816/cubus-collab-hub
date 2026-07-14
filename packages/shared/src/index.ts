@@ -51,12 +51,21 @@ export const ProposePatchInputSchema = z.object({
 });
 export type ProposePatchInput = z.infer<typeof ProposePatchInputSchema>;
 
+// Verbatim turn logging: the canonical text the other AI reads is stored as-is,
+// not summarized. The service truncates to these caps before persisting so an
+// oversized response still records instead of failing the whole tool call.
+export const MAX_TURN_PROMPT_CHARS = 100_000;
+export const MAX_TURN_RESPONSE_CHARS = 100_000;
+
 export const RecordTurnSummaryInputSchema = z.object({
   agent: z.enum(["chatgpt", "claude"]),
   seenSequence: z.number().int().nonnegative(),
-  summary: z.string().min(1).max(30_000),
+  userPrompt: z.string().min(1).max(500_000),
+  responseText: z.string().min(1).max(500_000),
+  summary: z.string().max(30_000).optional(),
   affectedPaths: z.array(z.string().max(1024)).max(100).default([]),
 });
+export type RecordTurnSummaryInput = z.infer<typeof RecordTurnSummaryInputSchema>;
 
 export const ApprovalInputSchema = z.object({
   proposalId: z.uuid(),

@@ -19,7 +19,7 @@ export class CubusMCP extends McpAgent<AppEnv, Record<string, never>, OAuthProps
     const service = new CollabService(this.env);
 
     this.server.registerTool("sync_context", {
-      description: "Read canonical documents, changes since this agent's cursor, pending proposals, and conflicts before responding.",
+      description: "Read canonical documents, changes since this agent's cursor, pending proposals, conflicts, and the other AI's recent verbatim turns (recentTurns: agent, createdAt, userPrompt, responseText) before responding. latestSequence is the global newest event.",
       inputSchema: {
         agent: z.enum(["chatgpt", "claude"]),
         query: z.string().max(1000).default(""),
@@ -61,11 +61,13 @@ export class CubusMCP extends McpAgent<AppEnv, Record<string, never>, OAuthProps
     }, async (input) => textResult(await service.propose(input)));
 
     this.server.registerTool("record_turn_summary", {
-      description: "Record the completed response summary and advance this agent's cursor only after a successful response.",
+      description: "After a successful response, log this turn so the other AI can read it verbatim, and advance this agent's cursor. Provide userPrompt (the user's exact prompt, verbatim) and responseText (your exact full reply, verbatim — do NOT summarize or shorten). summary is an optional one-line scan hint. Text over 100,000 chars is truncated on the server.",
       inputSchema: {
         agent: z.enum(["chatgpt", "claude"]),
         seenSequence: z.number().int().nonnegative(),
-        summary: z.string().min(1).max(30_000),
+        userPrompt: z.string().min(1).max(500_000),
+        responseText: z.string().min(1).max(500_000),
+        summary: z.string().max(30_000).optional(),
         affectedPaths: z.array(z.string().max(1024)).max(100).default([]),
       },
       annotations: { readOnlyHint: false, destructiveHint: false },

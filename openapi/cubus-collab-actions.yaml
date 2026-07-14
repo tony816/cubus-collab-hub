@@ -166,11 +166,24 @@ components:
         agent: { $ref: '#/components/schemas/Agent' }
     TurnSummaryInput:
       type: object
-      required: [agent, seenSequence, summary]
+      required: [agent, seenSequence, userPrompt, responseText]
       properties:
         agent: { $ref: '#/components/schemas/Agent' }
         seenSequence: { type: integer, minimum: 0 }
-        summary: { type: string, minLength: 1, maxLength: 30000 }
+        userPrompt:
+          type: string
+          minLength: 1
+          maxLength: 500000
+          description: The user's exact prompt, verbatim (not summarized).
+        responseText:
+          type: string
+          minLength: 1
+          maxLength: 500000
+          description: Your exact full reply, verbatim. Do not summarize or shorten; text over 100000 chars is truncated server-side.
+        summary:
+          type: string
+          maxLength: 30000
+          description: Optional one-line scan hint.
         affectedPaths:
           type: array
           maxItems: 100
