@@ -21,9 +21,40 @@ export class CollabService {
   readonly db: SupabaseClient<Database>;
 
   constructor(env: AppEnv) {
-    this.db = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    const proxyFetch: typeof fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const target = new URL(request.url);
+      if (target.origin !== new URL(env.SUPABASE_URL).origin || !target.pathname.startsWith("/rest/v1/")) {
+        throw new Error("Supabase proxy rejected an unexpected target");
+      }
+
+      const forwardedHeaders: Record<string, string> = {};
+      for (const name of ["accept", "accept-profile", "content-profile", "content-type", "prefer", "range", "range-unit"]) {
+        const value = request.headers.get(name);
+        if (value) forwardedHeaders[name] = value;
+      }
+      const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
+      return fetch(env.SUPABASE_PROXY_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-cubus-proxy-secret": env.SUPABASE_PROXY_SECRET,
+        },
+        body: JSON.stringify({
+          path: `${target.pathname}${target.search}`,
+          method: request.method,
+          headers: forwardedHeaders,
+          body,
+        }),
+      });
+    };
+
+    this.db = createClient<Database>(env.SUPABASE_URL, "proxy-transport", {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      global: { headers: { "X-Client-Info": "cubus-collab-worker/0.1" } },
+      global: {
+        headers: { "X-Client-Info": "cubus-collab-worker/0.1" },
+        fetch: proxyFetch,
+      },
     });
   }
 
@@ -185,10 +216,19 @@ export class CollabService {
   }
 
   async manifest(): Promise<unknown[]> {
-    const { data, error } = await this.db.from("documents")
-      .select("path,sha256,byte_count,version,updated_at")
-      .eq("deleted", false).order("path", { ascending: true }).limit(10000);
-    return requireData(data, error);
+    const documents: unknown[] = [];
+    const pageSize = 1000;
+    for (let start = 0; ; start += pageSize) {
+      const { data, error } = await this.db.from("documents")
+        .select("path,sha256,byte_count,version,updated_at")
+        .eq("deleted", false)
+        .order("path", { ascending: true })
+        .range(start, start + pageSize - 1);
+      const page = requireData(data, error);
+      documents.push(...page);
+      if (page.length < pageSize) break;
+    }
+    return documents;
   }
 
   async eventsAfter(sequence: number): Promise<unknown[]> {

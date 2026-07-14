@@ -1,7 +1,7 @@
 # 보안 모델
 
 - 작품 데이터는 Supabase에만 저장하고 공개 GitHub에는 코드만 저장합니다.
-- Data API는 service-role을 가진 Worker만 사용합니다. service-role 키는 브리지와 AI 클라이언트에 전달하지 않습니다.
+- Data API의 service-role은 Supabase Edge Function 런타임 안에서만 사용합니다. Worker는 허용 목록이 적용된 프록시를 별도 비밀값으로 호출하며, service-role 키는 Worker·브리지·AI 클라이언트에 전달하지 않습니다.
 - MCP는 OAuth 2.1 및 GitHub 본인 확인으로 보호하고 허용 GitHub 로그인 하나만 통과시킵니다.
 - ChatGPT Actions와 브리지는 서로 다른 장기 난수 토큰을 사용합니다.
 - 웹훅 비밀값은 고정 길이 해시의 constant-time 비교로 검사합니다.
@@ -12,4 +12,3 @@
 - 공개 저장소 스캔은 개인 로컬 경로, 이전 Drive 식별자, 대표적인 토큰 패턴을 거부합니다.
 
 비밀값을 교체할 때는 Cloudflare Worker Secret을 먼저 갱신한 뒤 Bridge 자격 증명 또는 GPT Action 인증을 갱신합니다.
-

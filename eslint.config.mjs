@@ -5,7 +5,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
-    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "**/worker-configuration.d.ts"],
+    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "**/worker-configuration.d.ts", "supabase/functions/**"],
   },
   {
     files: ["**/*.ts"],
@@ -26,4 +26,3 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
 );
-
