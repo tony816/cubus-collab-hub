@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { bearerToken, secureEqual, sha256Hex } from "./security.js";
+import { bearerToken, sealState, secureEqual, sha256Hex, unsealState } from "./security.js";
+
+const stateSecret = "test-only-cookie-encryption-key-32-chars";
 
 describe("worker security helpers", () => {
   it("compares secrets through fixed-size hashes", async () => {
@@ -15,5 +17,16 @@ describe("worker security helpers", () => {
     expect(bearerToken(new Request("https://example.test", { headers: { Authorization: "Bearer token" } }))).toBe("token");
     expect(bearerToken(new Request("https://example.test", { headers: { Authorization: "Basic token" } }))).toBe("");
   });
-});
 
+  it("round-trips sealed OAuth state", async () => {
+    const state = await sealState({ clientId: "claude", scope: ["mcp"] }, stateSecret);
+    await expect(unsealState(state, stateSecret)).resolves.toEqual({ clientId: "claude", scope: ["mcp"] });
+  });
+
+  it("rejects tampered and expired OAuth state", async () => {
+    const state = await sealState({ clientId: "claude" }, stateSecret, 1);
+    const replacement = state.endsWith("A") ? "B" : "A";
+    await expect(unsealState(`${state.slice(0, -1)}${replacement}`, stateSecret)).resolves.toBeNull();
+    await expect(unsealState(state, stateSecret, Date.now() + 1_001)).resolves.toBeNull();
+  });
+});
