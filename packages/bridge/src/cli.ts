@@ -50,10 +50,9 @@ if (command === "configure") {
     await watchVault(client, config.vaultPath, config.pollIntervalMs);
   } else if (command === "install-task") {
     const repositoryRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
-    await installLoginTask(repositoryRoot);
-    console.log("Installed Windows login task: CUBUS Collab Bridge");
+    const method = await installLoginTask(repositoryRoot);
+    console.log(`Installed Windows login startup (${method}): CUBUS Collab Bridge`);
   } else {
     usage();
   }
 }
-

@@ -66,6 +66,8 @@ npm run bridge -- verify
 npm run bridge -- install-task
 ```
 
+Windows가 작업 스케줄러 등록 권한을 거부하면 설치기는 현재 사용자 `HKCU` 로그인 실행 항목으로 자동 폴백합니다.
+
 `auth-set`은 토큰을 Windows Credential Manager에 저장합니다. 마이그레이션 보고서와 브리지 로그는 `%LOCALAPPDATA%\cubus-collab-hub`에 생성되며 공개 저장소나 볼트에는 들어가지 않습니다.
 
 ## 5. 운영 전환
