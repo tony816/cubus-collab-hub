@@ -12,8 +12,8 @@ jobs:
   code:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -37,7 +37,7 @@ jobs:
     env:
       PGPASSWORD: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Create Supabase-compatible roles
         run: psql -h localhost -U postgres -c "create role anon nologin; create role authenticated nologin; create role service_role nologin;"
       - name: Apply migrations
@@ -47,4 +47,3 @@ jobs:
           psql -h localhost -U postgres -Atc
           "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity"
           | grep '^0$'
-
