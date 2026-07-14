@@ -12,7 +12,7 @@ import {
   UpsertDocumentInputSchema,
 } from "@cubus/shared";
 import type { AppEnv, OAuthProps } from "./env.js";
-import { bearerToken, secureEqual, securityHeaders, sha256Hex } from "./security.js";
+import { bearerToken, sealState, secureEqual, securityHeaders, sha256Hex, unsealState } from "./security.js";
 import { CollabService } from "./service.js";
 
 type Bindings = AppEnv & { OAUTH_PROVIDER: OAuthHelpers };
@@ -36,6 +36,22 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
+function isAuthRequest(value: unknown): value is AuthRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const request = value as Record<string, unknown>;
+  const resource = request.resource;
+  return typeof request.responseType === "string"
+    && typeof request.clientId === "string"
+    && typeof request.redirectUri === "string"
+    && Array.isArray(request.scope)
+    && request.scope.every((scope) => typeof scope === "string")
+    && typeof request.state === "string"
+    && (request.codeChallenge === undefined || typeof request.codeChallenge === "string")
+    && (request.codeChallengeMethod === undefined || typeof request.codeChallengeMethod === "string")
+    && (resource === undefined || typeof resource === "string"
+      || (Array.isArray(resource) && resource.every((entry) => typeof entry === "string")));
+}
+
 function renderConsent(client: ClientInfo | null, consentToken: string, csrf: string): Response {
   const clientName = escapeHtml(client?.clientName ?? "Unknown MCP client");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>CUBUS 연결 승인</title><style>body{font-family:system-ui;background:#f6f6f3;color:#20201e;margin:0}.card{max-width:560px;margin:8vh auto;background:white;border:1px solid #ddd;border-radius:16px;padding:32px;box-shadow:0 12px 40px #0001}button{padding:12px 18px;border:0;border-radius:10px;background:#181817;color:white;font-weight:700}code{background:#f1f1ed;padding:2px 5px;border-radius:4px}</style></head><body><main class="card"><h1>CUBUS 협업 허브 연결</h1><p><strong>${clientName}</strong>에서 CUBUS 정본 조회와 변경 제안 도구를 사용하려고 합니다.</p><p>AI 변경은 승인 전까지 정본에 반영되지 않습니다. 승인·거절 도구는 현재 대화에서 사용자가 명시적으로 지시한 경우에만 사용해야 합니다.</p><form method="post" action="/authorize"><input type="hidden" name="consent_token" value="${escapeHtml(consentToken)}"><input type="hidden" name="csrf_token" value="${escapeHtml(csrf)}"><button type="submit">GitHub로 본인 확인</button></form></main></body></html>`;
@@ -51,8 +67,7 @@ function renderConsent(client: ClientInfo | null, consentToken: string, csrf: st
 app.get("/authorize", async (c) => {
   const oauthRequest = await c.env.OAUTH_PROVIDER.parseAuthRequest(c.req.raw);
   if (!oauthRequest.clientId) return c.text("Invalid OAuth request", 400);
-  const consentToken = crypto.randomUUID();
-  await c.env.OAUTH_KV.put(`consent:${consentToken}`, JSON.stringify(oauthRequest), { expirationTtl: 600 });
+  const consentToken = await sealState(oauthRequest, c.env.COOKIE_ENCRYPTION_KEY);
   const csrf = crypto.randomUUID();
   return renderConsent(await c.env.OAUTH_PROVIDER.lookupClient(oauthRequest.clientId), consentToken, csrf);
 });
@@ -65,12 +80,10 @@ app.post("/authorize", async (c) => {
   if (typeof consentToken !== "string" || typeof csrf !== "string" || !csrfCookie || !(await secureEqual(csrf, csrfCookie))) {
     return c.text("Invalid or expired consent", 400);
   }
-  const stored = await c.env.OAUTH_KV.get(`consent:${consentToken}`);
-  await c.env.OAUTH_KV.delete(`consent:${consentToken}`);
-  if (!stored) return c.text("Expired consent", 400);
+  const oauthRequest = await unsealState(consentToken, c.env.COOKIE_ENCRYPTION_KEY);
+  if (!isAuthRequest(oauthRequest)) return c.text("Expired consent", 400);
 
-  const state = crypto.randomUUID();
-  await c.env.OAUTH_KV.put(`github-state:${state}`, stored, { expirationTtl: 600 });
+  const state = await sealState(oauthRequest, c.env.COOKIE_ENCRYPTION_KEY);
   const stateHash = await sha256Hex(state);
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", c.env.GITHUB_CLIENT_ID);
@@ -96,10 +109,8 @@ app.get("/callback", async (c) => {
   if (!state || !code || !boundState || !(await secureEqual(await sha256Hex(state), boundState))) {
     return c.text("Invalid OAuth callback", 400);
   }
-  const stored = await c.env.OAUTH_KV.get(`github-state:${state}`);
-  await c.env.OAUTH_KV.delete(`github-state:${state}`);
-  if (!stored) return c.text("Expired OAuth callback", 400);
-  const oauthRequest = JSON.parse(stored) as AuthRequest;
+  const oauthRequest = await unsealState(state, c.env.COOKIE_ENCRYPTION_KEY);
+  if (!isAuthRequest(oauthRequest)) return c.text("Expired OAuth callback", 400);
 
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
