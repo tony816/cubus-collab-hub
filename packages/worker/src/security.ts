@@ -96,7 +96,10 @@ export function bearerToken(request: Request): string {
 
 export function securityHeaders(): Record<string, string> {
   return {
-    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'",
+    // Chrome enforces form-action against post-submit redirect targets, so the
+    // GitHub OAuth redirect after POST /authorize must be allowed explicitly.
+    "Content-Security-Policy":
+      "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https://github.com; frame-ancestors 'none'; base-uri 'self'",
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",

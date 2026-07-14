@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bearerToken, sealState, secureEqual, sha256Hex, unsealState } from "./security.js";
+import { bearerToken, sealState, secureEqual, securityHeaders, sha256Hex, unsealState } from "./security.js";
 
 const stateSecret = "test-only-cookie-encryption-key-32-chars";
 
@@ -21,6 +21,10 @@ describe("worker security helpers", () => {
   it("round-trips sealed OAuth state", async () => {
     const state = await sealState({ clientId: "claude", scope: ["mcp"] }, stateSecret);
     await expect(unsealState(state, stateSecret)).resolves.toEqual({ clientId: "claude", scope: ["mcp"] });
+  });
+
+  it("allows the GitHub OAuth redirect through form-action", () => {
+    expect(securityHeaders()["Content-Security-Policy"]).toContain("form-action 'self' https://github.com");
   });
 
   it("rejects tampered and expired OAuth state", async () => {
