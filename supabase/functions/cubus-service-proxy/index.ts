@@ -6,6 +6,7 @@ const allowedTables = new Set([
   "documents",
   "events",
   "proposals",
+  "turn_summaries",
 ]);
 
 const allowedRpcs = new Set([

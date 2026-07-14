@@ -301,7 +301,13 @@ app.post("/webhooks/supabase", async (c) => {
 });
 
 app.onError((error, c) => {
-  console.error(JSON.stringify({ message: "request failed", error: error.message, path: c.req.path }));
+  console.error(JSON.stringify({
+    message: "request failed",
+    error: error.message,
+    name: error.name,
+    stack: error.stack?.slice(0, 800),
+    path: c.req.path,
+  }));
   const status = error.name === "ZodError" ? 400 : 500;
   return c.json({ error: status === 400 ? error.message : "Internal server error" }, status);
 });
