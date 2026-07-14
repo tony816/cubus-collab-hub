@@ -1,0 +1,10 @@
+project_id = "cubus-collab"
+
+[api]
+enabled = true
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+major_version = 17
+

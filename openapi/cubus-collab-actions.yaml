@@ -1,0 +1,177 @@
+openapi: 3.1.0
+info:
+  title: CUBUS Collaboration Hub Actions
+  version: 0.1.0
+  description: Read CUBUS canonical context and submit approval-gated document proposals.
+servers:
+  - url: https://cubus-collab-hub.zpfhfh816.workers.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/actions/sync-context:
+    post:
+      operationId: syncContext
+      summary: Read changes and relevant canonical context before responding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncContextInput'
+      responses:
+        '200':
+          description: Context, events, pending proposals, and conflicts
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /api/actions/documents:
+    get:
+      operationId: getDocument
+      summary: Read a canonical document by vault-relative path
+      parameters:
+        - in: query
+          name: path
+          required: true
+          schema: { type: string, maxLength: 1024 }
+      responses:
+        '200':
+          description: Canonical document
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+  /api/actions/search:
+    post:
+      operationId: searchCanon
+      summary: Search canonical documents in Korean or English
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, minLength: 1, maxLength: 1000 }
+                limit: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        '200':
+          description: Matching documents
+  /api/actions/proposals:
+    get:
+      operationId: listProposals
+      summary: List document proposals
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/ProposalStatus' }
+      responses:
+        '200': { description: Proposals }
+    post:
+      operationId: proposePatch
+      summary: Create a pending proposal without modifying canonical content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProposalInput' }
+      responses:
+        '201': { description: Pending proposal created }
+  /api/actions/turn-summaries:
+    post:
+      operationId: recordTurnSummary
+      summary: Record a completed AI turn and advance its event cursor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TurnSummaryInput' }
+      responses:
+        '201': { description: Turn recorded }
+  /api/actions/proposals/{proposalId}/approve:
+    post:
+      operationId: approveProposal
+      summary: Approve a proposal after the user explicitly requests approval
+      description: This changes canonical content. Invoke only from an explicit current user instruction.
+      x-openai-isConsequential: true
+      parameters:
+        - in: path
+          name: proposalId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instruction]
+              properties:
+                instruction: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200': { description: Approval or conflict result }
+  /api/actions/proposals/{proposalId}/reject:
+    post:
+      operationId: rejectProposal
+      summary: Reject a proposal after the user explicitly requests rejection
+      x-openai-isConsequential: true
+      parameters:
+        - in: path
+          name: proposalId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instruction, reason]
+              properties:
+                instruction: { type: string, minLength: 1, maxLength: 2000 }
+                reason: { type: string, minLength: 1, maxLength: 5000 }
+      responses:
+        '200': { description: Proposal rejected }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Agent:
+      type: string
+      enum: [chatgpt, claude]
+    ProposalStatus:
+      type: string
+      enum: [pending, approved, rejected, conflict]
+    SyncContextInput:
+      type: object
+      required: [agent]
+      properties:
+        agent: { $ref: '#/components/schemas/Agent' }
+        query: { type: string, maxLength: 1000, default: '' }
+        focusPaths:
+          type: array
+          maxItems: 50
+          items: { type: string, maxLength: 1024 }
+        maxChars: { type: integer, minimum: 1000, maximum: 100000, default: 30000 }
+    ProposalInput:
+      type: object
+      required: [targetPath, expectedVersion, proposedContent, rationale, agent]
+      properties:
+        targetPath: { type: string, minLength: 1, maxLength: 1024 }
+        expectedVersion: { type: integer, minimum: 1 }
+        proposedContent: { type: string, maxLength: 2000000 }
+        proposedFrontmatter: { type: [object, 'null'], additionalProperties: true }
+        rationale: { type: string, minLength: 1, maxLength: 10000 }
+        agent: { $ref: '#/components/schemas/Agent' }
+    TurnSummaryInput:
+      type: object
+      required: [agent, seenSequence, summary]
+      properties:
+        agent: { $ref: '#/components/schemas/Agent' }
+        seenSequence: { type: integer, minimum: 0 }
+        summary: { type: string, minLength: 1, maxLength: 30000 }
+        affectedPaths:
+          type: array
+          maxItems: 100
+          items: { type: string, maxLength: 1024 }

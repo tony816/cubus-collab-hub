@@ -1,0 +1,33 @@
+node_modules/
+dist/
+coverage/
+.wrangler/
+.turbo/
+.cache/
+*.log
+
+# Secrets and local runtime state
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+secrets.json
+*.pem
+*.key
+.cubus-state/
+
+# CUBUS private content must never enter this public repository
+Obsidian Vault/
+CUBUS_Obsidian_MD/
+vault-export/
+migration-report*.json
+*.private.md
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+

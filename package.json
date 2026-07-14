@@ -1,0 +1,37 @@
+{
+  "name": "cubus-collab-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Private-data collaboration hub for CUBUS",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "openapi:validate": "tsx scripts/validate-openapi.ts",
+    "security:public-repo": "tsx scripts/check-public-repo.ts",
+    "worker:types": "npm run cf-typegen --workspace @cubus/worker",
+    "worker:dry-run": "npm run deploy:dry --workspace @cubus/worker",
+    "bridge": "npm run start --workspace @cubus/bridge --",
+    "check": "npm run security:public-repo && npm run lint && npm run typecheck && npm test && npm run openapi:validate && npm run worker:dry-run"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@apidevtools/swagger-parser": "12.1.0",
+    "@types/node": "24.0.13",
+    "eslint": "10.7.0",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10",
+    "yaml": "2.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
