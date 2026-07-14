@@ -8,7 +8,7 @@ export type WorkerSecrets = {
   ACTIONS_API_TOKEN: string;
   BRIDGE_API_TOKEN: string;
   WEBHOOK_SHARED_SECRET: string;
-  DISCORD_WEBHOOK_URL: string;
+  DISCORD_WEBHOOK_URL?: string;
   ALLOWED_GITHUB_LOGIN: string;
 };
 
