@@ -17,6 +17,34 @@ flowchart LR
     B -->|"무슨 일이 생기면"| F["🕊️ 알림 비둘기<br/>(Discord)"]
 ```
 
+## 📸 실제로 이렇게 써요
+
+말로만 설명하면 어려우니, 진짜 화면을 보여드릴게요.
+
+### 1️⃣ ChatGPT가 도서관에서 이야기를 찾아요
+
+ChatGPT에게 "리나 생일 파티 찾아줘"라고 했더니, **직접 도서관(CUBUS 허브)에 가서** 관련 공책 17권을 찾아왔어요. `search_canon`이라는 도구를 쓴 거예요.
+
+![ChatGPT가 search_canon 도구로 정본 문서를 검색한 화면](docs/images/chatgpt-search-canon.png)
+
+### 2️⃣ Claude가 ChatGPT의 말을 "그대로" 읽어요
+
+Claude에게 "ChatGPT가 방금 뭐라고 했어?"라고 물었더니, 요약이 아니라 **누가·언제·무엇을 물었고 어떻게 답했는지 토씨 하나 안 빼고** 그대로 가져왔어요. AI 친구끼리 같은 기억을 공유하는 거예요.
+
+![Claude가 sync_context로 ChatGPT의 대화 원문을 그대로 인용한 화면](docs/images/claude-verbatim-turn.png)
+
+### 3️⃣ 문 앞에서 "너 진짜 주인 맞아?" 확인해요
+
+아무나 도서관에 못 들어와요. AI 친구를 연결할 때 GitHub로 주인인지 한 번 확인해요. (주인 계정 딱 하나만 통과!)
+
+![CUBUS 협업 허브 연결 동의 화면](docs/images/oauth-consent.png)
+
+### 4️⃣ 연결되면 도구들이 준비돼요
+
+연결이 끝나면 AI가 쓸 수 있는 도구들이 나타나요. 예를 들어 `approve_proposal`(쪽지 승인하기) 같은 것들이요.
+
+![ChatGPT에 CUBUS Collab Hub 커넥터가 연결되고 도구가 나타난 화면](docs/images/chatgpt-connector-connected.png)
+
 ## 👥 등장인물
 
 | 등장인물 | 진짜 이름 | 하는 일 |
