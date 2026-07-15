@@ -45,6 +45,22 @@ Claude에게 "ChatGPT가 방금 뭐라고 했어?"라고 물었더니, 요약이
 
 ![ChatGPT에 CUBUS Collab Hub 커넥터가 연결되고 도구가 나타난 화면](docs/images/chatgpt-connector-connected.png)
 
+### 5️⃣ 도서관(슈퍼베이스)에는 모든 게 차곡차곡 쌓여요
+
+공책이 새로 들어오거나, 쪽지가 생기거나, 충돌이 나면 — **무슨 일이 있었는지 전부 "사건 기록장"에 순서대로 적혀요.** 아래는 진짜 도서관 뒷방(Supabase) 화면인데, 지금까지 **1,506건**의 사건이 기록돼 있어요. 왼쪽에는 공책(`documents`), 쪽지(`proposals`), 사건 기록장(`events`), 충돌(`conflicts`) 같은 서랍들이 보여요.
+
+![슈퍼베이스 Table Editor의 events 테이블에 1,506건의 이벤트가 쌓인 화면](docs/images/supabase-events.png)
+
+> 💡 이 "사건 기록장" 덕분에 AI 친구가 나중에 접속해도 *"내가 없는 동안 무슨 일이 있었지?"*를 순서대로 따라 읽을 수 있어요.
+
+### 6️⃣ 중요한 일이 생기면 🕊️ 알림 비둘기가 디스코드로 알려줘요
+
+쪽지가 새로 생기거나(`proposal.created`), 주인이 승인하거나(`proposal.approved`), 충돌이 나면(`conflict.created`) — 곧바로 디스코드에 메시지가 떠요. 그래서 도서관을 계속 안 보고 있어도 무슨 일이 생겼는지 바로 알 수 있어요.
+
+![디스코드에 CUBUS proposal.created / proposal.approved / conflict.created 알림이 도착한 화면](docs/images/discord-notifications.png)
+
+> 🔒 알림에는 **무슨 일이 있었는지(사건 종류·공책 이름·쪽지 번호)만** 적혀요. 이야기 내용 자체는 절대 비둘기가 물고 다니지 않아요.
+
 ## 👥 등장인물
 
 | 등장인물 | 진짜 이름 | 하는 일 |
